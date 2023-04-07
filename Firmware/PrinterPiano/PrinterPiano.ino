@@ -10,9 +10,9 @@ const char* wifi_ssid = "SSID";
 const char* wifi_pass = "PASSWORD";
 
 // Your octoprint api settings
-const char* octoprint_api_url  = "https://HOSTNAME/api/printer/command";
-const char* octoprint_host     = "HOSTNAME";
+const char* octoprint_api_url  = "http://192.168.178.83/api/printer/command";
 const char* octoprint_api_key  = "API_KEY";
+
 
 // Range to move the axis
 String positionX[2] = { "10", "50" };
@@ -63,9 +63,11 @@ int mode = MODE_OCTOPRINT_X;
 int octave = 2;
 int currentPos = 0;
 
-WiFiClientSecure client;
-HTTPClient http;
 
+
+HTTPClient http;
+WiFiClientSecure sslClient;
+WiFiClient client;
 
 void setup() {
     Serial.begin(74880);
@@ -84,8 +86,8 @@ void setup() {
     // Keypad Init
     customKeypad.begin();
 
-
-    client.setInsecure();
+    // Don't verify SSL certs
+    sslClient.setInsecure();
 }
 
 void loop() {
@@ -165,8 +167,12 @@ void playTone(byte number) {
 void sendCommand(String command) {
   if ((WiFi.status() == WL_CONNECTED)) {
     Serial.print("[HTTP] begin...\n");
-    http.begin(client, octoprint_api_url);
-    http.addHeader("Host", octoprint_host);
+    if (octoprint_api_url[4] == 's') {
+      Serial.print("https");
+      http.begin(sslClient, octoprint_api_url);
+    } else {
+      http.begin(client, octoprint_api_url);
+    }
     http.addHeader("Content-Type", "application/json");
     http.addHeader("X-Api-Key", octoprint_api_key);
 
